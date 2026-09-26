@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Would Python Display?</title>
+<style>
+  :root {
+    --bg: #f5f3ee; --panel: #ffffff; --ink: #1c2230; --muted: #667085; --line: #dfe2e8;
+    --brand: #003262; --brand-ink: #ffffff; --gold: #fdb515; --gold-ink: #3a2a00;
+    --code-bg: #0f1a2b; --code-ink: #e6edf7; --kw: #ffc857; --str: #8fd694; --num: #7cc4ff; --com: #7d8aa0; --prompt: #6b7a93;
+    --ok: #1f8a4c; --ok-bg: #e5f5ec; --bad: #c43d3d; --bad-bg: #fbe8e8; --chip: #eef1f6; --btn: #eef1f6; --btn-h: #e2e7ef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11141a; --panel: #1b2029; --ink: #e8ebf1; --muted: #9aa3b2; --line: #2e3542;
+      --brand: #4f86c6; --brand-ink: #ffffff; --gold: #fdb515; --gold-ink: #2a1f00;
+      --code-bg: #0b111c; --ok: #5fd08d; --ok-bg: #173323; --bad: #ff8585; --bad-bg: #3a1d20;
+      --chip: #262c38; --btn: #262c38; --btn-h: #303848;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { background: var(--brand); color: var(--brand-ink); padding: 18px 16px 0; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 24px; }
+  header p { margin: 2px 0 12px; opacity: .8; font-size: 14px; }
+  .tabs { display: flex; gap: 4px; }
+  .tabs button { background: transparent; color: var(--brand-ink); border: 0; padding: 10px 14px; font: inherit;
+    font-weight: 600; cursor: pointer; opacity: .7; border-bottom: 3px solid transparent; }
+  .tabs button.on { opacity: 1; border-bottom-color: var(--gold); }
+  main { padding: 16px; }
+  .view { display: none; } .view.on { display: block; }
+  button.b { font: inherit; color: var(--ink); background: var(--btn); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  button.b:hover { background: var(--btn-h); }
+  button.b.primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); font-weight: 600; }
+  button.b.gold { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); font-weight: 600; }
+  button.b:disabled { opacity: .45; cursor: default; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { font: inherit; border: 0; background: var(--panel); color: var(--ink); padding: 8px 14px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--brand); color: var(--brand-ink); font-weight: 600; }
+  .chips { margin-top: 10px; }
+  .chip { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--chip); color: var(--muted);
+    border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .chip.on { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); font-weight: 600; }
+  .chips.locked { opacity: .45; pointer-events: none; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 14px 0; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .stat small { display: block; color: var(--muted); font-size: 12px; }
+  .stat b { font-size: 20px; font-variant-numeric: tabular-nums; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .qhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: var(--muted); font-size: 13px; }
+  .tag { background: var(--chip); border-radius: 6px; padding: 2px 8px; font-weight: 600; color: var(--ink); }
+  .dots { letter-spacing: 2px; color: var(--gold); }
+  pre.code { background: var(--code-bg); color: var(--code-ink); border-radius: 10px; padding: 14px 16px; margin: 0;
+    font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-x: auto; }
+  .kw { color: var(--kw); } .st { color: var(--str); } .nu { color: var(--num); } .co { color: var(--com); } .pr { color: var(--prompt); }
+  label.q { display: block; font-weight: 600; margin: 14px 0 6px; }
+  textarea { width: 100%; font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; resize: vertical; }
+  textarea:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+  .hint { color: var(--muted); font-size: 12.5px; margin: 6px 0 12px; }
+  .hint code { background: var(--chip); padding: 0 4px; border-radius: 4px; }
+  .fb { margin-top: 14px; border-radius: 10px; padding: 12px 14px; display: none; }
+  .fb.show { display: block; }
+  .fb.ok { background: var(--ok-bg); } .fb.bad { background: var(--bad-bg); }
+  .fb h3 { margin: 0 0 6px; font-size: 16px; }
+  .fb.ok h3 { color: var(--ok); } .fb.bad h3 { color: var(--bad); }
+  .fb pre { margin: 4px 0 8px; background: var(--panel); border-radius: 6px; padding: 8px 10px;
+    font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; }
+  .fb .row { margin-top: 10px; }
+  .runout { margin-top: 8px; display: none; } .runout.show { display: block; }
+  .center { text-align: center; padding: 24px 8px; }
+  .center h2 { margin: 0 0 6px; }
+  .big { font-size: 40px; font-weight: 700; color: var(--brand); }
+  .share { font-family: ui-monospace, Menlo, monospace; background: var(--chip); border-radius: 8px; padding: 10px; display: inline-block; margin: 10px 0; white-space: pre; text-align: left; }
+  .bars .bar { margin: 10px 0; }
+  .bars .lab { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .bars .track { background: var(--chip); border-radius: 6px; height: 10px; overflow: hidden; }
+  .bars .fill { height: 100%; background: var(--brand); border-radius: 6px; }
+  .bars .bar.weak .fill { background: var(--bad); }
+  .weak-note { background: var(--bad-bg); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+  .pg-out { min-height: 60px; white-space: pre-wrap; }
+  .status { color: var(--muted); font-size: 13px; }
+  footer { color: var(--muted); font-size: 12px; text-align: center; padding: 8px 16px 24px; }
+  @media (max-width: 560px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .seg button { padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>What Would Python Display?</h1>
+    <p>Predict what the Python interpreter shows. WWPD practice in the style of CS 61A.</p>
+    <nav class="tabs">
+      <button data-tab="play" class="on">Play</button>
+      <button data-tab="progress">My progress</button>
+      <button data-tab="playground">Playground</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- PLAY -->
+  <section class="view on" id="view-play">
+    <div class="row">
+      <div class="seg" id="modes">
+        <button data-mode="practice" class="on">Practice</button>
+        <button data-mode="timed">Timed 60s</button>
+        <button data-mode="daily">Daily 5</button>
+      </div>
+    </div>
+    <div class="row chips" id="chips"></div>
+    <div class="stats">
+      <div class="stat"><small>Score</small><b id="s-score">0</b></div>
+      <div class="stat"><small>Streak</small><b id="s-streak">0</b></div>
+      <div class="stat"><small id="s-3-label">Level</small><b id="s-3">1</b></div>
+      <div class="stat"><small id="s-4-label">Correct</small><b id="s-4">0 / 0</b></div>
+    </div>
+    <div class="card" id="card"></div>
+  </section>
+
+  <!-- PROGRESS -->
+  <section class="view" id="view-progress">
+    <div class="card">
+      <div id="weak"></div>
+      <div class="stats" style="margin-top:0">
+        <div class="stat"><small>Answered</small><b id="p-total">0</b></div>
+        <div class="stat"><small>Accuracy</small><b id="p-acc">–</b></div>
+        <div class="stat"><small>Best streak</small><b id="p-streak">0</b></div>
+        <div class="stat"><small>Best timed score</small><b id="p-timed">0</b></div>
+      </div>
+      <h3 style="margin:8px 0 0">Accuracy by topic</h3>
+      <div class="bars" id="bars"></div>
+      <div class="row" style="margin-top:14px"><button class="b" id="reset">Reset progress</button></div>
+    </div>
+  </section>
+
+  <!-- PLAYGROUND -->
+  <section class="view" id="view-playground">
+    <div class="card">
+      <label class="q" style="margin-top:0" for="pg-code">Write some Python. Every line that would show something in the interpreter shows it here.</label>
+      <textarea id="pg-code" rows="10" spellcheck="false">def make_adder(n):
+    return lambda x: x + n
+
+add3 = make_adder(3)
+add3(4)
+print('Go', 'Bears')
+[x * x for x in range(5)]</textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="b primary" id="pg-run">Run (Ctrl/Cmd + Enter)</button>
+        <span class="status" id="pg-status"></span>
+      </div>
+      <label class="q">Output</label>
+      <pre class="code pg-out" id="pg-out"></pre>
+    </div>
+  </section>
+</main>
+<footer>Unofficial practice tool. Not affiliated with UC Berkeley or CS 61A. Answer keys were checked by running every question in real Python.</footer>
+
+<script>
+const BANK = [{"id": 0, "topic": "Basics", "diff": 1, "code": ">>> 3 + 4 * 2", "setup": "", "expr": "3 + 4 * 2", "answer": "11", "kind": "value", "err": null, "expl": "* happens before +, so it's 3 + 8."}, {"id": 1, "topic": "Basics", "diff": 1, "code": ">>> 7 // 2", "setup": "", "expr": "7 // 2", "answer": "3", "kind": "value", "err": null, "expl": "// is floor division: it drops the remainder."}, {"id": 2, "topic": "Basics", "diff": 1, "code": ">>> 7 / 2", "setup": "", "expr": "7 / 2", "answer": "3.5", "kind": "value", "err": null, "expl": "/ always gives a float in Python 3."}, {"id": 3, "topic": "Basics", "diff": 2, "code": ">>> -7 // 2", "setup": "", "expr": "-7 // 2", "answer": "-4", "kind": "value", "err": null, "expl": "Floor division rounds toward negative infinity, so -3.5 becomes -4, not -3."}, {"id": 4, "topic": "Basics", "diff": 2, "code": ">>> 2 ** 3 ** 2", "setup": "", "expr": "2 ** 3 ** 2", "answer": "512", "kind": "value", "err": null, "expl": "** groups right-to-left: 3 ** 2 = 9 first, then 2 ** 9."}, {"id": 5, "topic": "Basics", "diff": 1, "code": ">>> True and 0", "setup": "", "expr": "True and 0", "answer": "0", "kind": "value", "err": null, "expl": "and returns the first falsy value it sees (or the last value). 0 is falsy."}, {"id": 6, "topic": "Basics", "diff": 1, "code": ">>> 0 or '' or 'cal'", "setup": "", "expr": "0 or '' or 'cal'", "answer": "'cal'", "kind": "value", "err": null, "expl": "or returns the first truthy value. 0 and '' are falsy, so you get 'cal'."}, {"id": 7, "topic": "Basics", "diff": 2, "code": ">>> True or 1 / 0", "setup": "", "expr": "True or 1 / 0", "answer": "True", "kind": "value", "err": null, "expl": "or short-circuits: True is truthy, so 1 / 0 never runs."}, {"id": 8, "topic": "Basics", "diff": 2, "code": ">>> 1 / 0 or 5", "setup": "", "expr": "1 / 0 or 5", "answer": "Error", "kind": "error", "err": "ZeroDivisionError", "expl": "1 / 0 is evaluated first and raises ZeroDivisionError before or can help."}, {"id": 9, "topic": "Basics", "diff": 2, "code": ">>> print(print(1))", "setup": "", "expr": "print(print(1))", "answer": "1\nNone", "kind": "value", "err": null, "expl": "The inner print displays 1 and returns None; the outer print then displays None."}, {"id": 10, "topic": "Basics", "diff": 1, "code": ">>> print('Go', 'Bears')", "setup": "", "expr": "print('Go', 'Bears')", "answer": "Go Bears", "kind": "value", "err": null, "expl": "print separates its arguments with a space and shows strings without quotes."}, {"id": 11, "topic": "Basics", "diff": 1, "code": ">>> x = 10", "setup": "", "expr": "x = 10", "answer": "Nothing", "kind": "nothing", "err": null, "expl": "Assignment statements don't display anything."}, {"id": 12, "topic": "Basics", "diff": 1, "code": ">>> 'Go' + 'Bears' * 2", "setup": "", "expr": "'Go' + 'Bears' * 2", "answer": "'GoBearsBears'", "kind": "value", "err": null, "expl": "* happens first: 'Bears' * 2 is 'BearsBears'. The interpreter shows strings with quotes."}, {"id": 13, "topic": "Basics", "diff": 1, "code": ">>> 'cal'[1:]", "setup": "", "expr": "'cal'[1:]", "answer": "'al'", "kind": "value", "err": null, "expl": "Slicing from index 1 to the end skips the first character."}, {"id": 14, "topic": "Basics", "diff": 2, "code": ">>> x = 1\n>>> while x < 10:\n...     x = x * 3\n>>> x", "setup": "x = 1\nwhile x < 10:\n    x = x * 3", "expr": "x", "answer": "27", "kind": "value", "err": null, "expl": "x goes 1 → 3 → 9 → 27. The loop checks x < 10 before each step, so it stops at 27."}, {"id": 15, "topic": "Basics", "diff": 2, "code": ">>> def f(n):\n...     while n != 0:\n...         n = n - 2\n...     return n\n>>> f(5)", "setup": "def f(n):\n    while n != 0:\n        n = n - 2\n    return n", "expr": "f(5)", "answer": "Forever", "kind": "forever", "err": null, "expl": "n goes 5, 3, 1, -1, -3 … it skips over 0, so the loop never ends."}, {"id": 16, "topic": "Basics", "diff": 2, "code": ">>> print(None)", "setup": "", "expr": "print(None)", "answer": "None", "kind": "value", "err": null, "expl": "print displays None as the word None."}, {"id": 17, "topic": "Basics", "diff": 1, "code": ">>> None", "setup": "", "expr": "None", "answer": "Nothing", "kind": "nothing", "err": null, "expl": "The interactive interpreter shows nothing when an expression evaluates to None."}, {"id": 18, "topic": "Functions", "diff": 1, "code": ">>> def square(x):\n...     return x * x\n>>> square(square(3))", "setup": "def square(x):\n    return x * x", "expr": "square(square(3))", "answer": "81", "kind": "value", "err": null, "expl": "square(3) is 9, then square(9) is 81."}, {"id": 19, "topic": "Functions", "diff": 2, "code": ">>> def f(x):\n...     print(x)\n>>> f(3) + 1", "setup": "def f(x):\n    print(x)", "expr": "f(3) + 1", "answer": "3\nError", "kind": "error", "err": "TypeError", "expl": "f prints 3 but returns None, and None + 1 raises a TypeError."}, {"id": 20, "topic": "Functions", "diff": 1, "code": ">>> def f(x):\n...     print(x)\n>>> y = f(2)", "setup": "def f(x):\n    print(x)", "expr": "y = f(2)", "answer": "2", "kind": "value", "err": null, "expl": "Calling f prints 2. The assignment itself shows nothing."}, {"id": 21, "topic": "Functions", "diff": 2, "code": ">>> def make_adder(n):\n...     return lambda x: x + n\n>>> add3 = make_adder(3)\n>>> add3(4)", "setup": "def make_adder(n):\n    return lambda x: x + n\nadd3 = make_adder(3)", "expr": "add3(4)", "answer": "7", "kind": "value", "err": null, "expl": "make_adder(3) returns a function that remembers n = 3, so add3(4) is 7."}, {"id": 22, "topic": "Functions", "diff": 2, "code": ">>> (lambda x: lambda y: x * y)(3)(4)", "setup": "", "expr": "(lambda x: lambda y: x * y)(3)(4)", "answer": "12", "kind": "value", "err": null, "expl": "The first call returns lambda y: 3 * y; calling that with 4 gives 12."}, {"id": 23, "topic": "Functions", "diff": 2, "code": ">>> def compose(f, g):\n...     return lambda x: f(g(x))\n>>> inc = lambda x: x + 1\n>>> double = lambda x: x * 2\n>>> compose(inc, double)(5)", "setup": "def compose(f, g):\n    return lambda x: f(g(x))\ninc = lambda x: x + 1\ndouble = lambda x: x * 2", "expr": "compose(inc, double)(5)", "answer": "11", "kind": "value", "err": null, "expl": "g runs first: double(5) = 10, then inc(10) = 11."}, {"id": 24, "topic": "Functions", "diff": 2, "code": ">>> x = 10\n>>> def f():\n...     return x\n>>> x = 20\n>>> f()", "setup": "x = 10\ndef f():\n    return x\nx = 20", "expr": "f()", "answer": "20", "kind": "value", "err": null, "expl": "Names are looked up when the function is called, not when it's defined. By then x is 20."}, {"id": 25, "topic": "Functions", "diff": 3, "code": ">>> x = 1\n>>> def f():\n...     x = 2\n...     def g():\n...         return x\n...     return g\n>>> x = 3\n>>> f()()", "setup": "x = 1\ndef f():\n    x = 2\n    def g():\n        return x\n    return g\nx = 3", "expr": "f()()", "answer": "2", "kind": "value", "err": null, "expl": "g was defined inside f's frame, where x is 2. The global x doesn't matter."}, {"id": 26, "topic": "Functions", "diff": 3, "code": ">>> def counter():\n...     count = 0\n...     def inc():\n...         count += 1\n...         return count\n...     return inc\n>>> counter()()", "setup": "def counter():\n    count = 0\n    def inc():\n        count += 1\n        return count\n    return inc", "expr": "counter()()", "answer": "Error", "kind": "error", "err": "UnboundLocalError", "expl": "count += 1 assigns to count, making it local to inc, so reading it first fails. You need nonlocal."}, {"id": 27, "topic": "Functions", "diff": 3, "code": ">>> def counter():\n...     count = 0\n...     def inc():\n...         nonlocal count\n...         count += 1\n...         return count\n...     return inc\n>>> c = counter()\n>>> a = c()\n>>> b = c()\n>>> c()", "setup": "def counter():\n    count = 0\n    def inc():\n        nonlocal count\n        count += 1\n        return count\n    return inc\nc = counter()\na = c()\nb = c()", "expr": "c()", "answer": "3", "kind": "value", "err": null, "expl": "nonlocal lets inc change count in counter's frame. This is the third call, so 3."}, {"id": 28, "topic": "Functions", "diff": 2, "code": ">>> list(map(lambda x: x * x, [1, 2, 3]))", "setup": "", "expr": "list(map(lambda x: x * x, [1, 2, 3]))", "answer": "[1, 4, 9]", "kind": "value", "err": null, "expl": "map applies the function to each element."}, {"id": 29, "topic": "Functions", "diff": 2, "code": ">>> list(filter(lambda x: x % 2, range(6)))", "setup": "", "expr": "list(filter(lambda x: x % 2, range(6)))", "answer": "[1, 3, 5]", "kind": "value", "err": null, "expl": "filter keeps elements where the function is truthy. x % 2 is 1 for odd numbers."}, {"id": 30, "topic": "Functions", "diff": 1, "code": ">>> f = lambda: print('Cal')\n>>> f()", "setup": "f = lambda: print('Cal')", "expr": "f()", "answer": "Cal", "kind": "value", "err": null, "expl": "Calling f prints Cal. print returns None, and None isn't displayed."}, {"id": 31, "topic": "Functions", "diff": 3, "code": ">>> def f(x):\n...     return lambda: x\n>>> fs = [f(i) for i in range(3)]\n>>> fs[1]()", "setup": "def f(x):\n    return lambda: x\nfs = [f(i) for i in range(3)]", "expr": "fs[1]()", "answer": "1", "kind": "value", "err": null, "expl": "Each call to f makes a new frame with its own x, so fs[1] remembers 1."}, {"id": 32, "topic": "Functions", "diff": 3, "code": ">>> fs = [lambda: i for i in range(3)]\n>>> fs[1]()", "setup": "fs = [lambda: i for i in range(3)]", "expr": "fs[1]()", "answer": "2", "kind": "value", "err": null, "expl": "All three lambdas look up the same i when called, and the loop left i at 2."}, {"id": 33, "topic": "Functions", "diff": 2, "code": ">>> def f(x, y=2):\n...     return x * y\n>>> f(3) + f(3, 3)", "setup": "def f(x, y=2):\n    return x * y", "expr": "f(3) + f(3, 3)", "answer": "15", "kind": "value", "err": null, "expl": "y defaults to 2, so it's 6 + 9."}, {"id": 34, "topic": "Recursion", "diff": 1, "code": ">>> def fact(n):\n...     if n == 0:\n...         return 1\n...     return n * fact(n - 1)\n>>> fact(5)", "setup": "def fact(n):\n    if n == 0:\n        return 1\n    return n * fact(n - 1)", "expr": "fact(5)", "answer": "120", "kind": "value", "err": null, "expl": "5 * 4 * 3 * 2 * 1 = 120."}, {"id": 35, "topic": "Recursion", "diff": 2, "code": ">>> def f(n):\n...     if n == 0:\n...         return 0\n...     print(n)\n...     return f(n - 1)\n>>> f(3)", "setup": "def f(n):\n    if n == 0:\n        return 0\n    print(n)\n    return f(n - 1)", "expr": "f(3)", "answer": "3\n2\n1\n0", "kind": "value", "err": null, "expl": "Prints happen on the way down (3, 2, 1). Then the final return value 0 is displayed."}, {"id": 36, "topic": "Recursion", "diff": 2, "code": ">>> def f(n):\n...     if n > 0:\n...         f(n - 1)\n...         print(n)\n>>> f(3)", "setup": "def f(n):\n    if n > 0:\n        f(n - 1)\n        print(n)", "expr": "f(3)", "answer": "1\n2\n3", "kind": "value", "err": null, "expl": "The recursive call comes before the print, so prints happen on the way back up: 1, 2, 3."}, {"id": 37, "topic": "Recursion", "diff": 2, "code": ">>> def fib(n):\n...     if n < 2:\n...         return n\n...     return fib(n - 1) + fib(n - 2)\n>>> fib(7)", "setup": "def fib(n):\n    if n < 2:\n        return n\n    return fib(n - 1) + fib(n - 2)", "expr": "fib(7)", "answer": "13", "kind": "value", "err": null, "expl": "0, 1, 1, 2, 3, 5, 8, 13: fib(7) is 13."}, {"id": 38, "topic": "Recursion", "diff": 2, "code": ">>> def f(n):\n...     return n * f(n - 1)\n>>> f(3)", "setup": "def f(n):\n    return n * f(n - 1)", "expr": "f(3)", "answer": "Error", "kind": "error", "err": "RecursionError", "expl": "There is no base case, so it recurses until Python gives up with a RecursionError."}, {"id": 39, "topic": "Recursion", "diff": 3, "code": ">>> def sum_digits(n):\n...     if n < 10:\n...         return n\n...     return n % 10 + sum_digits(n // 10)\n>>> sum_digits(2026)", "setup": "def sum_digits(n):\n    if n < 10:\n        return n\n    return n % 10 + sum_digits(n // 10)", "expr": "sum_digits(2026)", "answer": "10", "kind": "value", "err": null, "expl": "6 + 2 + 0 + 2 = 10."}, {"id": 40, "topic": "Recursion", "diff": 3, "code": ">>> def count_partitions(n, m):\n...     if n == 0:\n...         return 1\n...     elif n < 0 or m == 0:\n...         return 0\n...     return count_partitions(n - m, m) + count_partitions(n, m - 1)\n>>> count_partitions(6, 4)", "setup": "def count_partitions(n, m):\n    if n == 0:\n        return 1\n    elif n < 0 or m == 0:\n        return 0\n    return count_partitions(n - m, m) + count_partitions(n, m - 1)", "expr": "count_partitions(6, 4)", "answer": "9", "kind": "value", "err": null, "expl": "Ways to write 6 using parts up to 4: 4+2, 4+1+1, 3+3, 3+2+1, 3+1+1+1, 2+2+2, 2+2+1+1, 2+1+1+1+1, 1×6. That's 9."}, {"id": 41, "topic": "Recursion", "diff": 3, "code": ">>> def hailstone(n):\n...     print(n)\n...     if n == 1:\n...         return 1\n...     if n % 2 == 0:\n...         return 1 + hailstone(n // 2)\n...     return 1 + hailstone(3 * n + 1)\n>>> hailstone(3)", "setup": "def hailstone(n):\n    print(n)\n    if n == 1:\n        return 1\n    if n % 2 == 0:\n        return 1 + hailstone(n // 2)\n    return 1 + hailstone(3 * n + 1)", "expr": "hailstone(3)", "answer": "3\n10\n5\n16\n8\n4\n2\n1\n8", "kind": "value", "err": null, "expl": "Prints 3, 10, 5, 16, 8, 4, 2, 1, then returns the length of the sequence: 8."}, {"id": 42, "topic": "Recursion", "diff": 2, "code": ">>> def rev(s):\n...     if len(s) <= 1:\n...         return s\n...     return rev(s[1:]) + s[0]\n>>> rev('cal')", "setup": "def rev(s):\n    if len(s) <= 1:\n        return s\n    return rev(s[1:]) + s[0]", "expr": "rev('cal')", "answer": "'lac'", "kind": "value", "err": null, "expl": "rev('al') + 'c' → (rev('l') + 'a') + 'c' → 'lac'."}, {"id": 43, "topic": "Lists", "diff": 1, "code": ">>> x = [1, 2, 3]\n>>> y = x\n>>> y.append(4)\n>>> x", "setup": "x = [1, 2, 3]\ny = x\ny.append(4)", "expr": "x", "answer": "[1, 2, 3, 4]", "kind": "value", "err": null, "expl": "y = x doesn't copy. Both names point to the same list."}, {"id": 44, "topic": "Lists", "diff": 2, "code": ">>> x = [1, 2, 3]\n>>> y = x[:]\n>>> y.append(4)\n>>> x", "setup": "x = [1, 2, 3]\ny = x[:]\ny.append(4)", "expr": "x", "answer": "[1, 2, 3]", "kind": "value", "err": null, "expl": "x[:] makes a new copy, so changing y doesn't affect x."}, {"id": 45, "topic": "Lists", "diff": 2, "code": ">>> a = [1, 2]\n>>> b = [1, 2]\n>>> a.append([3])\n>>> b.extend([3])\n>>> (a, b)", "setup": "a = [1, 2]\nb = [1, 2]\na.append([3])\nb.extend([3])", "expr": "(a, b)", "answer": "([1, 2, [3]], [1, 2, 3])", "kind": "value", "err": null, "expl": "append adds its argument as one element (a list inside a list); extend adds each element."}, {"id": 46, "topic": "Lists", "diff": 1, "code": ">>> x = [1, 2, 3]\n>>> x.append(4)", "setup": "x = [1, 2, 3]", "expr": "x.append(4)", "answer": "Nothing", "kind": "nothing", "err": null, "expl": "append changes the list in place and returns None, so nothing is displayed."}, {"id": 47, "topic": "Lists", "diff": 2, "code": ">>> x = [3, 1, 2]\n>>> print(x.sort())", "setup": "x = [3, 1, 2]", "expr": "print(x.sort())", "answer": "None", "kind": "value", "err": null, "expl": "sort changes x in place and returns None."}, {"id": 48, "topic": "Lists", "diff": 3, "code": ">>> a = [1, 2]\n>>> b = a\n>>> a = a + [3]\n>>> b", "setup": "a = [1, 2]\nb = a\na = a + [3]", "expr": "b", "answer": "[1, 2]", "kind": "value", "err": null, "expl": "a + [3] builds a new list and rebinds a. b still points to the original."}, {"id": 49, "topic": "Lists", "diff": 3, "code": ">>> a = [1, 2]\n>>> b = a\n>>> a += [3]\n>>> b", "setup": "a = [1, 2]\nb = a\na += [3]", "expr": "b", "answer": "[1, 2, 3]", "kind": "value", "err": null, "expl": "For lists, += changes the list in place (like extend), so b sees the change."}, {"id": 50, "topic": "Lists", "diff": 3, "code": ">>> grid = [[0] * 2] * 2\n>>> grid[0][0] = 5\n>>> grid", "setup": "grid = [[0] * 2] * 2\ngrid[0][0] = 5", "expr": "grid", "answer": "[[5, 0], [5, 0]]", "kind": "value", "err": null, "expl": "[[0] * 2] * 2 repeats the SAME inner list twice, so changing one row changes both."}, {"id": 51, "topic": "Lists", "diff": 1, "code": ">>> [x * 2 for x in range(4) if x % 2 == 0]", "setup": "", "expr": "[x * 2 for x in range(4) if x % 2 == 0]", "answer": "[0, 4]", "kind": "value", "err": null, "expl": "Keep 0 and 2, then double them."}, {"id": 52, "topic": "Lists", "diff": 2, "code": ">>> s = [1, 2, 3, 4, 5]\n>>> s[1:4:2]", "setup": "s = [1, 2, 3, 4, 5]", "expr": "s[1:4:2]", "answer": "[2, 4]", "kind": "value", "err": null, "expl": "Start at index 1, stop before 4, step 2: indexes 1 and 3."}, {"id": 53, "topic": "Lists", "diff": 1, "code": ">>> s = [1, 2, 3, 4, 5]\n>>> s[::-1]", "setup": "s = [1, 2, 3, 4, 5]", "expr": "s[::-1]", "answer": "[5, 4, 3, 2, 1]", "kind": "value", "err": null, "expl": "A step of -1 walks the list backwards."}, {"id": 54, "topic": "Lists", "diff": 2, "code": ">>> x = [1, 2, 3]\n>>> x.pop() + x.pop(0)", "setup": "x = [1, 2, 3]", "expr": "x.pop() + x.pop(0)", "answer": "4", "kind": "value", "err": null, "expl": "pop() removes and returns the last item (3); pop(0) removes the first (1)."}, {"id": 55, "topic": "Lists", "diff": 3, "code": ">>> t = (1, [2, 3])\n>>> t[1].append(4)\n>>> t", "setup": "t = (1, [2, 3])\nt[1].append(4)", "expr": "t", "answer": "(1, [2, 3, 4])", "kind": "value", "err": null, "expl": "A tuple can't be changed, but a list inside it can."}, {"id": 56, "topic": "Lists", "diff": 2, "code": ">>> t = (1, 2)\n>>> t[0] = 9", "setup": "t = (1, 2)", "expr": "t[0] = 9", "answer": "Error", "kind": "error", "err": "TypeError", "expl": "Tuples are immutable, so item assignment raises a TypeError."}, {"id": 57, "topic": "Lists", "diff": 1, "code": ">>> len([[1, 2], [3]])", "setup": "", "expr": "len([[1, 2], [3]])", "answer": "2", "kind": "value", "err": null, "expl": "The outer list has two elements; each happens to be a list."}, {"id": 58, "topic": "Lists", "diff": 2, "code": ">>> s = [1, 2, 3]\n>>> s[5]", "setup": "s = [1, 2, 3]", "expr": "s[5]", "answer": "Error", "kind": "error", "err": "IndexError", "expl": "Index 5 is past the end, which raises an IndexError."}, {"id": 59, "topic": "Lists", "diff": 2, "code": ">>> s = [1, 2, 3]\n>>> s[1:10]", "setup": "s = [1, 2, 3]", "expr": "s[1:10]", "answer": "[2, 3]", "kind": "value", "err": null, "expl": "Slices never raise errors; they just stop at the end."}, {"id": 60, "topic": "Dictionaries", "diff": 1, "code": ">>> d = {'a': 1, 'b': 2}\n>>> d['c'] = 3\n>>> len(d)", "setup": "d = {'a': 1, 'b': 2}\nd['c'] = 3", "expr": "len(d)", "answer": "3", "kind": "value", "err": null, "expl": "Assigning to a new key adds it, so there are three keys."}, {"id": 61, "topic": "Dictionaries", "diff": 1, "code": ">>> d = {'a': 1}\n>>> d['z']", "setup": "d = {'a': 1}", "expr": "d['z']", "answer": "Error", "kind": "error", "err": "KeyError", "expl": "Looking up a missing key with [] raises a KeyError."}, {"id": 62, "topic": "Dictionaries", "diff": 1, "code": ">>> d = {'a': 1}\n>>> d.get('z', 0)", "setup": "d = {'a': 1}", "expr": "d.get('z', 0)", "answer": "0", "kind": "value", "err": null, "expl": "get returns the default instead of raising an error."}, {"id": 63, "topic": "Dictionaries", "diff": 3, "code": ">>> d = {1: 'one', 1.0: 'uno'}\n>>> d", "setup": "d = {1: 'one', 1.0: 'uno'}", "expr": "d", "answer": "{1: 'uno'}", "kind": "value", "err": null, "expl": "1 == 1.0 and they hash the same, so it's one key. The first key object stays; the value is replaced."}, {"id": 64, "topic": "Dictionaries", "diff": 2, "code": ">>> {x: x * x for x in range(4)}", "setup": "", "expr": "{x: x * x for x in range(4)}", "answer": "{0: 0, 1: 1, 2: 4, 3: 9}", "kind": "value", "err": null, "expl": "A dictionary comprehension maps each x to its square."}, {"id": 65, "topic": "Dictionaries", "diff": 2, "code": ">>> d = {'cal': 1, 'stanford': 0}\n>>> list(d)", "setup": "d = {'cal': 1, 'stanford': 0}", "expr": "list(d)", "answer": "['cal', 'stanford']", "kind": "value", "err": null, "expl": "Looping over a dict (or calling list on it) gives its keys, in insertion order."}, {"id": 66, "topic": "Dictionaries", "diff": 2, "code": ">>> d = {}\n>>> for w in 'go bears go'.split():\n...     d[w] = d.get(w, 0) + 1\n>>> d", "setup": "d = {}\nfor w in 'go bears go'.split():\n    d[w] = d.get(w, 0) + 1", "expr": "d", "answer": "{'go': 2, 'bears': 1}", "kind": "value", "err": null, "expl": "A word count: 'go' appears twice and 'bears' once."}, {"id": 67, "topic": "Dictionaries", "diff": 2, "code": ">>> {[1, 2]: 'list'}", "setup": "", "expr": "{[1, 2]: 'list'}", "answer": "Error", "kind": "error", "err": "TypeError", "expl": "Lists are mutable, so they can't be dictionary keys: TypeError (unhashable)."}, {"id": 68, "topic": "Dictionaries", "diff": 2, "code": ">>> d = {'a': 1, 'b': 2}\n>>> [k * v for k, v in d.items()]", "setup": "d = {'a': 1, 'b': 2}", "expr": "[k * v for k, v in d.items()]", "answer": "['a', 'bb']", "kind": "value", "err": null, "expl": "items() gives (key, value) pairs; a string times a number repeats it."}, {"id": 69, "topic": "Iterators", "diff": 1, "code": ">>> it = iter([1, 2, 3])\n>>> a = next(it)\n>>> next(it)", "setup": "it = iter([1, 2, 3])\na = next(it)", "expr": "next(it)", "answer": "2", "kind": "value", "err": null, "expl": "The first next already used 1, so this one gives 2."}, {"id": 70, "topic": "Iterators", "diff": 2, "code": ">>> it = iter([1, 2])\n>>> b = list(it)\n>>> list(it)", "setup": "it = iter([1, 2])\nb = list(it)", "expr": "list(it)", "answer": "[]", "kind": "value", "err": null, "expl": "list(it) already used up the iterator. Once exhausted, it stays empty."}, {"id": 71, "topic": "Iterators", "diff": 2, "code": ">>> it = iter([1])\n>>> a = next(it)\n>>> next(it)", "setup": "it = iter([1])\na = next(it)", "expr": "next(it)", "answer": "Error", "kind": "error", "err": "StopIteration", "expl": "There's nothing left, so next raises StopIteration."}, {"id": 72, "topic": "Iterators", "diff": 2, "code": ">>> def gen():\n...     yield 1\n...     yield 2\n>>> g = gen()\n>>> [next(g), next(g)]", "setup": "def gen():\n    yield 1\n    yield 2\ng = gen()", "expr": "[next(g), next(g)]", "answer": "[1, 2]", "kind": "value", "err": null, "expl": "Each next runs the generator up to the next yield."}, {"id": 73, "topic": "Iterators", "diff": 2, "code": ">>> def gen():\n...     print('start')\n...     yield 1\n>>> g = gen()\n>>> next(g)", "setup": "def gen():\n    print('start')\n    yield 1\ng = gen()", "expr": "next(g)", "answer": "start\n1", "kind": "value", "err": null, "expl": "Calling gen() runs none of its body. The first next prints start, then yields 1."}, {"id": 74, "topic": "Iterators", "diff": 2, "code": ">>> def countdown(n):\n...     while n > 0:\n...         yield n\n...         n -= 1\n>>> list(countdown(3))", "setup": "def countdown(n):\n    while n > 0:\n        yield n\n        n -= 1", "expr": "list(countdown(3))", "answer": "[3, 2, 1]", "kind": "value", "err": null, "expl": "It yields 3, 2, 1 and then stops when n reaches 0."}, {"id": 75, "topic": "Iterators", "diff": 3, "code": ">>> def nat():\n...     n = 0\n...     while True:\n...         yield n\n...         n += 1\n>>> list(nat())", "setup": "def nat():\n    n = 0\n    while True:\n        yield n\n        n += 1", "expr": "list(nat())", "answer": "Forever", "kind": "forever", "err": null, "expl": "nat() never stops yielding, so list(...) keeps going forever."}, {"id": 76, "topic": "Iterators", "diff": 3, "code": ">>> def gen():\n...     yield from [1, 2]\n...     yield 3\n>>> list(gen())", "setup": "def gen():\n    yield from [1, 2]\n    yield 3", "expr": "list(gen())", "answer": "[1, 2, 3]", "kind": "value", "err": null, "expl": "yield from yields each element of [1, 2], then the generator yields 3."}, {"id": 77, "topic": "Iterators", "diff": 2, "code": ">>> list(zip([1, 2, 3], 'ab'))", "setup": "", "expr": "list(zip([1, 2, 3], 'ab'))", "answer": "[(1, 'a'), (2, 'b')]", "kind": "value", "err": null, "expl": "zip stops at the shorter input, and 'ab' only has two characters."}, {"id": 78, "topic": "Iterators", "diff": 2, "code": ">>> m = map(lambda x: x + 1, [1, 2])\n>>> a = list(m)\n>>> list(m)", "setup": "m = map(lambda x: x + 1, [1, 2])\na = list(m)", "expr": "list(m)", "answer": "[]", "kind": "value", "err": null, "expl": "map returns an iterator. The first list(m) used it up."}, {"id": 79, "topic": "Iterators", "diff": 3, "code": ">>> def gen():\n...     x = yield 1\n...     print('got', x)\n...     yield 2\n>>> g = gen()\n>>> a = next(g)\n>>> g.send('hi')", "setup": "def gen():\n    x = yield 1\n    print('got', x)\n    yield 2\ng = gen()\na = next(g)", "expr": "g.send('hi')", "answer": "got hi\n2", "kind": "value", "err": null, "expl": "send resumes the generator and makes the paused yield evaluate to 'hi'. It prints, then yields 2."}, {"id": 80, "topic": "Classes", "diff": 1, "code": ">>> class Bear:\n...     def __init__(self, name):\n...         self.name = name\n>>> oski = Bear('Oski')\n>>> oski.name", "setup": "class Bear:\n    def __init__(self, name):\n        self.name = name\noski = Bear('Oski')", "expr": "oski.name", "answer": "'Oski'", "kind": "value", "err": null, "expl": "__init__ stored the name on the instance."}, {"id": 81, "topic": "Classes", "diff": 2, "code": ">>> class Student:\n...     school = 'Cal'\n...     def __init__(self, name):\n...         self.name = name\n>>> a = Student('Ann')\n>>> b = Student('Bo')\n>>> a.school = 'Stanford'\n>>> b.school", "setup": "class Student:\n    school = 'Cal'\n    def __init__(self, name):\n        self.name = name\na = Student('Ann')\nb = Student('Bo')\na.school = 'Stanford'", "expr": "b.school", "answer": "'Cal'", "kind": "value", "err": null, "expl": "a.school = ... creates an instance attribute on a only. b still reads the class attribute."}, {"id": 82, "topic": "Classes", "diff": 3, "code": ">>> class Student:\n...     school = 'Cal'\n>>> a = Student()\n>>> b = Student()\n>>> a.school = 'Stanford'\n>>> Student.school = 'Berkeley'\n>>> (a.school, b.school)", "setup": "class Student:\n    school = 'Cal'\na = Student()\nb = Student()\na.school = 'Stanford'\nStudent.school = 'Berkeley'", "expr": "(a.school, b.school)", "answer": "('Stanford', 'Berkeley')", "kind": "value", "err": null, "expl": "a has its own instance attribute. b has none, so it sees the updated class attribute."}, {"id": 83, "topic": "Classes", "diff": 2, "code": ">>> class A:\n...     def f(self):\n...         return 'A'\n>>> class B(A):\n...     pass\n>>> B().f()", "setup": "class A:\n    def f(self):\n        return 'A'\nclass B(A):\n    pass", "expr": "B().f()", "answer": "'A'", "kind": "value", "err": null, "expl": "B has no f, so Python looks it up in the parent class A."}, {"id": 84, "topic": "Classes", "diff": 3, "code": ">>> class A:\n...     def f(self):\n...         return self.g()\n...     def g(self):\n...         return 'A'\n>>> class B(A):\n...     def g(self):\n...         return 'B'\n>>> B().f()", "setup": "class A:\n    def f(self):\n        return self.g()\n    def g(self):\n        return 'A'\nclass B(A):\n    def g(self):\n        return 'B'", "expr": "B().f()", "answer": "'B'", "kind": "value", "err": null, "expl": "f is inherited, but self is a B, so self.g() finds B's g."}, {"id": 85, "topic": "Classes", "diff": 2, "code": ">>> class Account:\n...     def __init__(self):\n...         self.balance = 0\n...     def deposit(self, amt):\n...         self.balance += amt\n...         return self.balance\n>>> acct = Account()\n>>> Account.deposit(acct, 5)", "setup": "class Account:\n    def __init__(self):\n        self.balance = 0\n    def deposit(self, amt):\n        self.balance += amt\n        return self.balance\nacct = Account()", "expr": "Account.deposit(acct, 5)", "answer": "5", "kind": "value", "err": null, "expl": "Calling through the class means you pass self yourself. Same as acct.deposit(5)."}, {"id": 86, "topic": "Classes", "diff": 2, "code": ">>> class Cat:\n...     def speak():\n...         return 'meow'\n>>> Cat().speak()", "setup": "class Cat:\n    def speak():\n        return 'meow'", "expr": "Cat().speak()", "answer": "Error", "kind": "error", "err": "TypeError", "expl": "The method is missing self. Python passes the instance anyway, so a TypeError is raised."}, {"id": 87, "topic": "Classes", "diff": 3, "code": ">>> class Dog:\n...     def __repr__(self):\n...         return 'Dog()'\n...     def __str__(self):\n...         return 'woof'\n>>> d = Dog()\n>>> print(d, [d])", "setup": "class Dog:\n    def __repr__(self):\n        return 'Dog()'\n    def __str__(self):\n        return 'woof'\nd = Dog()", "expr": "print(d, [d])", "answer": "woof [Dog()]", "kind": "value", "err": null, "expl": "print uses str for d, but a list shows its elements with repr."}, {"id": 88, "topic": "Classes", "diff": 3, "code": ">>> class Dog:\n...     def __repr__(self):\n...         return 'Dog()'\n...     def __str__(self):\n...         return 'woof'\n>>> d = Dog()\n>>> d", "setup": "class Dog:\n    def __repr__(self):\n        return 'Dog()'\n    def __str__(self):\n        return 'woof'\nd = Dog()", "expr": "d", "answer": "Dog()", "kind": "value", "err": null, "expl": "The interactive interpreter displays values with repr."}, {"id": 89, "topic": "Classes", "diff": 2, "code": ">>> class C:\n...     count = 0\n...     def __init__(self):\n...         C.count += 1\n>>> a, b = C(), C()\n>>> C.count", "setup": "class C:\n    count = 0\n    def __init__(self):\n        C.count += 1\na, b = C(), C()", "expr": "C.count", "answer": "2", "kind": "value", "err": null, "expl": "Each new object adds 1 to the shared class attribute."}];
+const TOPICS = [...new Set(BANK.map(q => q.topic))];
+const PYODIDE = 'https://cdn.jsdelivr.net/pyodide/v0.27.8/full/';
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// ---------- Storage (safe if unavailable) ----------
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('wwpd-' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('wwpd-' + k, JSON.stringify(v)); } catch {} }
+};
+let P = store.get('progress', { topics: {}, bestStreak: 0, bestTimed: 0, recent: [] });
+const saveP = () => store.set('progress', P);
+function record(q, ok) {
+  const t = P.topics[q.topic] || (P.topics[q.topic] = { a: 0, c: 0 });
+  t.a++; if (ok) t.c++;
+  saveP();
+}
+const acc = topic => { const t = P.topics[topic]; return t && t.a ? t.c / t.a : 0.5; };
+
+// ---------- Syntax highlighting ----------
+const TOKEN = /('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")|(#.*)|\b(def|return|if|elif|else|while|for|in|lambda|class|yield|from|not|and|or|nonlocal|global|pass|import|True|False|None|is|try|except|with|as|del|break|continue)\b|\b(\d+(?:\.\d+)?)\b|(^(?:>>>|\.\.\.)(?= |$))/gm;
+function highlight(src) {
+  let out = '', last = 0;
+  src.replace(TOKEN, (m, str, com, kw, num, pr, idx) => {
+    out += esc(src.slice(last, idx));
+    const cls = str ? 'st' : com ? 'co' : kw ? 'kw' : num ? 'nu' : 'pr';
+    out += `<span class="${cls}">${esc(m)}</span>`;
+    last = idx + m.length;
+  });
+  return out + esc(src.slice(last));
+}
+
+// ---------- Answer checking ----------
+function normLine(l) {
+  l = l.trim().replace(/\s+/g, ' ').replace(/"/g, "'").replace(/\s*([,:\[\]\(\)\{\}])\s*/g, '$1');
+  const low = l.toLowerCase();
+  if (/^(error\b|[a-z]*error\b|stopiteration\b)/.test(low)) return '#error';
+  if (['forever', 'infinite loop', 'infinite', 'loops forever'].includes(low)) return '#forever';
+  if (low === 'nothing') return '#nothing';
+  return l;
+}
+const norm = s => s.split('\n').map(normLine).filter(Boolean).join('\n');
+const isRight = (input, q) => norm(input) === norm(q.answer);
+
+// ---------- Python in the browser (Pyodide in a worker, so infinite loops can be stopped) ----------
+const RUNNER = `
+import ast, sys, io
+def run_repl(src):
+    g = {"__name__": "__main__"}
+    buf = io.StringIO(); old = sys.stdout; sys.stdout = buf
+    try:
+        for stmt in ast.parse(src).body:
+            exec(compile(ast.Interactive(body=[stmt]), "<stdin>", "single"), g)
+    except BaseException as e:
+        buf.write(f"{type(e).__name__}: {e}\\n")
+    finally:
+        sys.stdout = old
+    return buf.getvalue()
+`;
+const Py = { worker: null, ready: null, pending: null };
+function pyStart() {
+  if (Py.ready) return Py.ready;
+  const src = `
+    try { importScripts(${JSON.stringify(PYODIDE + 'pyodide.js')}); } catch (e) { postMessage({ type: 'fail', msg: String(e) }); }
+    const boot = loadPyodide({ indexURL: ${JSON.stringify(PYODIDE)} }).then(py => { py.runPython(${JSON.stringify(RUNNER)}); postMessage({ type: 'ready' }); return py; })
+      .catch(e => postMessage({ type: 'fail', msg: String(e) }));
+    onmessage = async e => { const py = await boot; postMessage({ type: 'result', out: py.globals.get('run_repl')(e.data) }); };`;
+  Py.worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+  Py.ready = new Promise((res, rej) => {
+    Py.worker.onmessage = e => {
+      const m = e.data;
+      if (m.type === 'ready') res();
+      else if (m.type === 'fail') { pyReset(); rej(new Error(m.msg)); }
+      else if (m.type === 'result' && Py.pending) Py.pending(m.out);
+    };
+    Py.worker.onerror = e => { pyReset(); rej(new Error(e.message || 'worker error')); };
+  });
+  return Py.ready;
+}
+function pyReset() { if (Py.worker) Py.worker.terminate(); Py.worker = null; Py.ready = null; Py.pending = null; }
+async function runPython(code, onStatus) {
+  if (!Py.ready) onStatus && onStatus('Loading Python (about 10 MB, only the first time)…');
+  await pyStart();
+  onStatus && onStatus('Running…');
+  return new Promise(res => {
+    const timer = setTimeout(() => { pyReset(); res({ timeout: true }); }, 3000);
+    Py.pending = out => { clearTimeout(timer); Py.pending = null; res({ out }); };
+    Py.worker.postMessage(code);
+  });
+}
+function showRun(el, r) {
+  el.classList.add('show');
+  el.innerHTML = r.timeout
+    ? '<b>Python says:</b><pre>Still running after 3 seconds, so it was stopped. That is what "Forever" looks like.</pre>'
+    : `<b>Python says:</b><pre>${esc(r.out.replace(/\n$/, '') || '(nothing displayed)')}</pre>`;
+}
+
+// ---------- Game state ----------
+const S = { mode: 'practice', topics: new Set(TOPICS), q: null, answered: false, score: 0, streak: 0, right: 0, total: 0,
+            timeLeft: 60, timer: null, running: false, daily: null, dailyIdx: 0, dailyMarks: [] };
+const level = () => S.streak >= 6 ? 3 : S.streak >= 3 ? 2 : 1;
+
+function pickNext() {
+  const pool = BANK.filter(q => S.topics.has(q.topic));
+  const recent = P.recent.slice(-Math.min(25, pool.length - 1));
+  const lv = level();
+  let c = pool.filter(q => q.diff <= lv && !recent.includes(q.id));
+  if (!c.length) c = pool.filter(q => !recent.includes(q.id));
+  if (!c.length) c = pool;
+  const w = c.map(q => (q.diff === lv ? 3 : 1) * (1.5 - acc(q.topic)));
+  let r = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < c.length; i++) { r -= w[i]; if (r <= 0) return c[i]; }
+  return c[c.length - 1];
+}
+
+// Daily 5: same questions for everyone on a given date
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+function seeded(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function dailySet() {
+  const rnd = seeded([...today()].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261));
+  const used = new Set();
+  return [1, 1, 2, 2, 3].map(d => {
+    const c = BANK.filter(q => q.diff === d && !used.has(q.id));
+    const q = c[Math.floor(rnd() * c.length)]; used.add(q.id); return q;
+  });
+}
+
+// ---------- Rendering ----------
+function renderStats() {
+  $('s-score').textContent = S.score;
+  $('s-streak').textContent = S.streak;
+  if (S.mode === 'timed') { $('s-3-label').textContent = 'Time left'; $('s-3').textContent = S.timeLeft + 's'; }
+  else if (S.mode === 'daily') { $('s-3-label').textContent = 'Question'; $('s-3').textContent = `${Math.min(S.dailyIdx + 1, 5)} / 5`; }
+  else { $('s-3-label').textContent = 'Level'; $('s-3').textContent = level(); }
+  $('s-4').textContent = `${S.right} / ${S.total}`;
+}
+function renderChips() {
+  $('chips').innerHTML = TOPICS.map(t => `<button class="chip ${S.topics.has(t) ? 'on' : ''}" data-t="${t}">${t}</button>`).join('');
+  $('chips').classList.toggle('locked', S.mode === 'daily');
+}
+function renderQuestion() {
+  const q = S.q; S.answered = false;
+  $('card').innerHTML = `
+    <div class="qhead"><span class="tag">${q.topic}</span><span class="dots" title="Difficulty">${'●'.repeat(q.diff)}${'○'.repeat(3 - q.diff)}</span></div>
+    <pre class="code">${highlight(q.code)}</pre>
+    <label class="q" for="ans">What would Python display after the last line?</label>
+    <textarea id="ans" rows="2" spellcheck="false" autocomplete="off" placeholder="Type exactly what the interpreter shows…"></textarea>
+    <div class="hint">Special answers: <code>Error</code>, <code>Forever</code> (infinite loop), <code>Nothing</code>. If lines are printed before an error, type them first, then <code>Error</code> on its own line. Enter submits; Shift+Enter adds a line.</div>
+    <div class="row"><button class="b primary" id="submit">Submit</button><button class="b" id="idk">Show answer</button></div>
+    <div class="fb" id="fb"></div>`;
+  $('ans').focus();
+  $('ans').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); submit(false); } });
+  $('submit').onclick = () => submit(false);
+  $('idk').onclick = () => submit(true);
+  renderStats();
+}
+function submit(gaveUp) {
+  if (S.answered) return;
+  const input = $('ans').value;
+  if (!gaveUp && !input.trim()) { $('ans').placeholder = 'Type an answer, or Nothing if nothing is displayed'; return; }
+  S.answered = true;
+  const q = S.q, ok = !gaveUp && isRight(input, q);
+  S.total++;
+  if (ok) { S.score += 10 * q.diff + 2 * Math.min(S.streak, 10); S.streak++; S.right++; }
+  else S.streak = 0;
+  P.bestStreak = Math.max(P.bestStreak, S.streak);
+  P.recent = [...P.recent.filter(i => i !== q.id), q.id].slice(-40);
+  record(q, ok);
+  if (S.mode === 'daily') S.dailyMarks.push(ok);
+  $('ans').readOnly = true; $('submit').disabled = true; $('idk').disabled = true;
+
+  const fb = $('fb');
+  fb.className = 'fb show ' + (ok ? 'ok' : 'bad');
+  const errNote = q.err ? ` (Python raises <b>${q.err}</b>.)` : '';
+  fb.innerHTML = `<h3>${ok ? 'Correct!' : gaveUp ? 'Here’s the answer' : 'Not quite'}</h3>
+    ${ok ? '' : `<div>Python displays:</div><pre>${esc(q.answer)}</pre>`}
+    <div>${esc(q.expl)}${errNote}</div>
+    <div class="runout" id="runout"></div>
+    <div class="row">${S.mode === 'timed' ? '' : '<button class="b primary" id="next">Next (Enter)</button>'}
+      <button class="b" id="runit">Run it in Python</button><span class="status" id="runstatus"></span></div>`;
+  $('runit').onclick = async () => {
+    $('runit').disabled = true;
+    try { showRun($('runout'), await runPython(q.setup + '\n' + q.expr, m => $('runstatus').textContent = m)); $('runstatus').textContent = ''; }
+    catch (e) { $('runstatus').textContent = 'Couldn’t load Python. Running code needs an internet connection.'; }
+    $('runit').disabled = false;
+  };
+  if (S.mode === 'timed') setTimeout(() => { if (S.running) { S.q = pickNext(); renderQuestion(); } }, ok ? 700 : 2200);
+  else { $('next').onclick = next; $('next').focus(); }
+  renderStats();
+}
+function next() {
+  if (S.mode === 'daily') {
+    S.dailyIdx++;
+    if (S.dailyIdx >= 5) return finishDaily();
+    S.q = S.daily[S.dailyIdx];
+  } else S.q = pickNext();
+  renderQuestion();
+}
+
+// ---------- Modes ----------
+function resetSession() {
+  clearInterval(S.timer); S.running = false;
+  Object.assign(S, { score: 0, streak: 0, right: 0, total: 0, timeLeft: 60, dailyIdx: 0, dailyMarks: [] });
+}
+function setMode(m) {
+  S.mode = m; resetSession();
+  document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  renderChips();
+  if (m === 'practice') { S.q = pickNext(); renderQuestion(); }
+  else if (m === 'timed') timedIntro();
+  else dailyStart();
+  renderStats();
+}
+function timedIntro() {
+  $('card').innerHTML = `<div class="center"><h2>60-second round</h2>
+    <p class="status">Answer as many as you can. Harder questions and streaks are worth more.<br>Best so far: <b>${P.bestTimed}</b></p>
+    <button class="b gold" id="go">Start</button></div>`;
+  $('go').onclick = () => {
+    resetSession(); S.running = true; S.q = pickNext(); renderQuestion();
+    S.timer = setInterval(() => { S.timeLeft--; renderStats(); if (S.timeLeft <= 0) timedEnd(); }, 1000);
+  };
+  $('go').focus();
+}
+function timedEnd() {
+  clearInterval(S.timer); S.running = false;
+  const best = S.score > P.bestTimed; if (best) { P.bestTimed = S.score; saveP(); }
+  $('card').innerHTML = `<div class="center"><h2>Time!</h2><div class="big">${S.score}</div>
+    <p class="status">${S.right} correct out of ${S.total}${best ? ' · New best!' : ` · Best: ${P.bestTimed}`}</p>
+    <button class="b gold" id="again">Play again</button></div>`;
+  $('again').onclick = timedIntro;
+}
+function dailyStart() {
+  const done = store.get('daily', {})[today()];
+  if (done) return dailyResult(done);
+  S.daily = dailySet(); S.q = S.daily[0]; renderQuestion();
+}
+function finishDaily() {
+  const all = store.get('daily', {});
+  all[today()] = { marks: S.dailyMarks, score: S.score };
+  store.set('daily', all);
+  dailyResult(all[today()]);
+}
+function dailyResult(r) {
+  const n = r.marks.filter(Boolean).length;
+  const share = `WWPD Daily ${today()}\n${r.marks.map(x => x ? '■' : '□').join(' ')}  ${n}/5 · ${r.score} pts`;
+  $('card').innerHTML = `<div class="center"><h2>Daily 5 done</h2><div class="big">${n} / 5</div>
+    <div class="share">${esc(share)}</div><br>
+    <button class="b" id="copy">Copy result</button>
+    <p class="status">New questions tomorrow. Keep practicing in Practice mode.</p></div>`;
+  $('copy').onclick = async () => { try { await navigator.clipboard.writeText(share); $('copy').textContent = 'Copied!'; } catch { $('copy').textContent = 'Select the text above to copy'; } };
+}
+
+// ---------- Progress view ----------
+function renderProgress() {
+  let a = 0, c = 0;
+  const rows = TOPICS.map(t => { const x = P.topics[t] || { a: 0, c: 0 }; a += x.a; c += x.c; return { t, ...x, p: x.a ? x.c / x.a : null }; });
+  $('p-total').textContent = a;
+  $('p-acc').textContent = a ? Math.round(100 * c / a) + '%' : '–';
+  $('p-streak').textContent = P.bestStreak;
+  $('p-timed').textContent = P.bestTimed;
+  const tried = rows.filter(r => r.a >= 3).sort((x, y) => x.p - y.p);
+  const weak = tried.length && tried[0].p < 0.8 ? tried[0] : null;
+  $('weak').innerHTML = weak
+    ? `<div class="weak-note">Your weakest topic is <b>${weak.t}</b>: you get ${Math.round(100 * (1 - weak.p))}% of these wrong. <button class="b" id="drill">Practice ${weak.t}</button></div>`
+    : `<p class="status">${a < 10 ? 'Answer a few questions and your weak spots will show up here.' : 'No weak spots right now. Nice work!'}</p>`;
+  if (weak) $('drill').onclick = () => { S.topics = new Set([weak.t]); showTab('play'); setMode('practice'); };
+  $('bars').innerHTML = rows.map(r => `<div class="bar ${weak && r.t === weak.t ? 'weak' : ''}">
+    <div class="lab"><span>${r.t}</span><span>${r.a ? `${Math.round(100 * r.p)}% · ${r.c}/${r.a}` : 'not tried yet'}</span></div>
+    <div class="track"><div class="fill" style="width:${r.a ? 100 * r.p : 0}%"></div></div></div>`).join('');
+}
+
+// ---------- Events ----------
+function showTab(t) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'view-' + t));
+  if (t === 'progress') renderProgress();
+}
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$('chips').onclick = e => {
+  const t = e.target.dataset && e.target.dataset.t; if (!t) return;
+  if (S.topics.has(t)) { if (S.topics.size === 1) return; S.topics.delete(t); } else S.topics.add(t);
+  renderChips();
+  if (S.mode === 'practice' && (!S.topics.has(S.q.topic) || S.answered)) { S.q = pickNext(); renderQuestion(); }
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && S.answered && $('next') && !['BUTTON', 'TEXTAREA'].includes(e.target.tagName)) { e.preventDefault(); next(); }
+});
+$('reset').onclick = () => { if (confirmReset()) { P = { topics: {}, bestStreak: 0, bestTimed: 0, recent: [] }; saveP(); store.set('daily', {}); renderProgress(); } };
+function confirmReset() { const b = $('reset'); if (b.dataset.armed) { delete b.dataset.armed; b.textContent = 'Reset progress'; return true; } b.dataset.armed = 1; b.textContent = 'Click again to confirm'; return false; }
+
+// Playground
+async function playground() {
+  const code = $('pg-code').value.split('\n').map(l => l.replace(/^(>>>|\.\.\.) ?/, '')).join('\n');
+  $('pg-run').disabled = true;
+  try {
+    const r = await runPython(code, m => $('pg-status').textContent = m);
+    $('pg-out').textContent = r.timeout ? 'Stopped after 3 seconds (probably an infinite loop).' : (r.out || '(nothing displayed)');
+    $('pg-status').textContent = '';
+  } catch (e) { $('pg-status').textContent = 'Couldn’t load Python. The Playground needs an internet connection.'; }
+  $('pg-run').disabled = false;
+}
+$('pg-run').onclick = playground;
+$('pg-code').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); playground(); }
+  if (e.key === 'Tab') { e.preventDefault(); const t = e.target, s = t.selectionStart; t.setRangeText('    ', s, t.selectionEnd, 'end'); }
+});
+
+setMode('practice');
+</script>
+</body>
+</html>
